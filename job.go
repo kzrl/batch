@@ -10,28 +10,24 @@ type JobResult struct {
 	Output string
 }
 
-type Work interface {
-	Do() JobResult
-}
-
 type Job struct {
-	id int
-	created time.Time
-	completed time.Time
+	ID int
+	Created time.Time
+	Completed time.Time
 }
 
 func (j *Job) IsDone() bool {
-	return !j.completed.IsZero()
+	return !j.Completed.IsZero()
 }
 
 func (j *Job) String() string {
-	return fmt.Sprintf("id=%d created=%s completed=%t)", j.id, j.created, j.IsDone())
+	return fmt.Sprintf("id=%d created=%s completed=%t)", j.ID, j.Created, j.IsDone())
 }
 
 func NewJob(id int) Job {
 	return Job{
-		id: id,
-		created: time.Now(),
+		ID: id,
+		Created: time.Now(),
 	}
 }
 
