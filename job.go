@@ -12,6 +12,10 @@ type JobResult struct {
 	Error error
 }
 
+func (jr *JobResult) String() string {
+	return fmt.Sprintf("Job.IDD=%d created=%s completed=%t)", jr.ID, jr.created, jr.Job.IsDone())
+}
+
 // Job is executed by a BatchProcessor.
 type Job struct {
 	ID        int
@@ -33,7 +37,7 @@ func (j *Job) IsDone() bool {
 }
 
 func (j *Job) String() string {
-	return fmt.Sprintf("id=%d created=%s completed=%t)", j.ID, j.created, j.IsDone())
+	return fmt.Sprintf("ID=%d created=%s completed=%t)", j.ID, j.created, j.IsDone())
 }
 
 func (j *Job) Created() time.Time {

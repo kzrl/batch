@@ -20,8 +20,9 @@ type Microbatch struct {
 	proc BatchProcessor
 	queue chan Batch
 	submit chan Job
-	Results map[int]JobResult
+	results sync.Map
 	shutdown chan struct{}
+	once sync.Once // used to avoid a closed channel panic if we call .Shutdown() twice.
 	numWorkers int
 }
 
@@ -41,20 +42,19 @@ func (b *Microbatch) Submit(j Job) JobResult {
 func (b *Microbatch) Start() int {
 	for i:= 0; i< b.numWorkers; i++ {
 		wg.Add(1)
-		go b.SubmitWorker(i)
+		go b.submitWorker(i)
 	}
 	return b.numWorkers
 }
 
-// SubmitWorker reads off submit channel and builds the batches of jobs.
-func (b *Microbatch) SubmitWorker(id int) {
-	//TODO - bug, if we call SubmitWorker directly without using Start(), this will panic with negative WaitGroup counter
+// submitWorker reads off submit channel and builds the batches of jobs.
+func (b *Microbatch) submitWorker(id int) {
 	defer wg.Done() 
 
 	slog.Info("Start SubmitWorker", "id", id)
 	receivedCount := 0
 	processedCount := 0
-	jobs := make([]Job, 0) // to avoid needing mutexes, each worker gets their own slice of jobs
+	jobs := make([]Job, 0) // to avoid needing mutexes, each worker gets their own slice of jobs.
  	for {
 		// shutdown has been signalled and we're out of jobs to process, return.
 		if b.IsShutdown() && len(jobs) == 0 {
@@ -106,31 +106,47 @@ func (b *Microbatch) IsShutdown() bool {
 // Shutdown closes the b.shutdown channel to signal to SubmitWorker goroutines to finish work and exit.
 func (b *Microbatch) Shutdown() {
 	slog.Info("Microbatch shutting down")
-	close(b.shutdown) // close the shutdown channel to signal to SubmitWorkers to finish up their work.
+	b.once.Do(func() {
+		close(b.shutdown) // close the shutdown channel to signal to SubmitWorkers to finish up their work.
+	})
 	wg.Wait()
+	slog.Info("Microbatch shut down")
 }
 
 // StoreJobResults populates the b.Results map.
-// Uses an RWMutex.Lock() to make it safe to be called from multiple goroutines.
+// Uses a sync.Map to make it safe to be called from multiple goroutines.
 func (b *Microbatch) StoreJobResults(jr []JobResult) {
-	b.Lock()
 	for _, result := range jr {
-		b.Results[result.Job.ID] = result
+		slog.Info("StoreJobResults", "id", result.Job.ID)
+		b.results.Store(result.Job.ID, result)
 	}
-	b.Unlock()
+
 }
 
-// PrintAllJobResults loops over the b.Results map.
-// Uses an RWMutex.RLock to make it safe to be called from multiple goroutines.
+// PrintAllJobResults loops over the b.Results sync.Map.
 func (b *Microbatch) PrintAllJobResults() {
-	b.RLock()
-	for id, result := range b.Results {
-		slog.Info("JobResult[id]", "id", id, "output", result.Output, "error", result.Error, "IsDone()", result.Job.IsDone())
-	}
-	b.RUnlock()
+	b.results.Range(func(id any, result any) bool {
+		jr, ok := result.(JobResult)
+		if ok {
+			slog.Info("JobResult[id]", "id", jr.ID, "output", jr.Output, "error", jr.Error, "IsDone()", jr.Job.IsDone())
+		}
+		
+		return true
+	})	
 }
 
-
+// GetJobResult retrieves a JobResult from the b.results sync.Map.
+func (b *Microbatch) GetJobResult(id int) (JobResult, bool) {
+	result, foundOk := b.results.Load(id)
+	if !foundOk {
+		return JobResult{}, false
+	}
+	jr, ok := result.(JobResult)
+	if !ok {
+		slog.Error("GetJobResult(id) failed type assertion to JobResult", "id", id)
+	}
+	return jr, ok
+}
 
 
 // New returns a configured Microbatch ready for use.
@@ -140,10 +156,8 @@ func New(size int, maxAge time.Duration, numWorkers int, proc BatchProcessor) Mi
 	b.maxAge = maxAge
 	b.proc = proc
 	b.shutdown = make(chan struct{})
-	b.queue = make(chan Batch, buffSize) // buffer size chosen at random.
-	b.submit = make(chan Job, buffSize) // buffer size chosen at random.
+	b.queue = make(chan Batch, buffSize)
+	b.submit = make(chan Job, buffSize)
 	b.numWorkers = numWorkers
-	b.Results = make(map[int]JobResult)
 	return b
 }
-

@@ -19,6 +19,12 @@ func (nbp *NoopBatchProcessor) Do(batches <- chan(Batch)) []JobResult {
 	select {
 	case batch := <- batches:
 		for _, job := range batch.Jobs {
+			// nil guard in case job.Work isn't set.
+			if job.Work == nil {
+				job.Done()
+				jr = append(jr, JobResult{Job: job})
+				continue
+			}
 			err, result := job.Do()
 			// not checking err != nil, just adding it to the JobResult.
 			job.Done()
