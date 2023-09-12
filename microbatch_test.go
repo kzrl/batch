@@ -64,7 +64,7 @@ func TestMicrobatch_submitWorker(t *testing.T) {
 		name       string
 		want       int
 		numWorkers int
-		numJobs int
+		numJobs    int
 	}{
 		{name: "Check that submitWorker processes submitted jobs OK", numWorkers: 2, numJobs: 42},
 	}
@@ -161,19 +161,19 @@ func TestMicrobatch_Shutdown(t *testing.T) {
 }
 
 func TestMicrobatch_StoreJobresults(t *testing.T) {
-	
+
 	type args struct {
 		jr []JobResult
 	}
 	tests := []struct {
-		name   string
-		args   args
+		name string
+		args args
 	}{
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-		
+
 		})
 	}
 }
@@ -198,7 +198,7 @@ func TestMicrobatch_PrintAllJobresults(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-	
+
 		})
 	}
 }
@@ -250,7 +250,7 @@ func TestMicrobatch_StoreJobResults(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-		
+
 		})
 	}
 }
@@ -275,20 +275,20 @@ func TestMicrobatch_PrintAllJobResults(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-	
+
 		})
 	}
 }
 
 func TestMicrobatch_GetJobResult(t *testing.T) {
-	
+
 	numWorkers := 2
-	
+
 	tests := []struct {
-		name   string
-		id int
-		got   JobResult
-		ok  bool
+		name string
+		id   int
+		got  JobResult
+		ok   bool
 	}{
 		{name: "Got JobResult from an ID", id: 2, ok: true},
 	}
@@ -298,7 +298,7 @@ func TestMicrobatch_GetJobResult(t *testing.T) {
 			var nbp NoopBatchProcessor
 			mb := New(batchSize, maxAge, numWorkers, &nbp)
 			mb.Start()
-		
+
 			// Submit some jobs.
 			for i := 0; i < 42; i++ {
 				j := NewJob(i)

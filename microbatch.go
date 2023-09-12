@@ -1,12 +1,11 @@
 // Package microbatch provides a way to create Batches of Jobs.
 package microbatch
 
-import(
-	"time"
-	"sync"
+import (
 	"log/slog"
+	"sync"
+	"time"
 )
-
 
 // buffSize is the size of the buffered submit and queue channels.
 // Can tune this based on application requirements.
@@ -15,14 +14,14 @@ const buffSize = 100
 // Microbatch holds the configuration for desired batch size and frequency.
 type Microbatch struct {
 	sync.RWMutex
-	size int
-	maxAge time.Duration
-	proc BatchProcessor
-	queue chan Batch
-	submit chan Job
-	results sync.Map
-	shutdown chan struct{}
-	once sync.Once // used to avoid a closed channel panic if we call .Shutdown() twice.
+	size       int
+	maxAge     time.Duration
+	proc       BatchProcessor
+	queue      chan Batch
+	submit     chan Job
+	results    sync.Map
+	shutdown   chan struct{}
+	once       sync.Once // used to avoid a closed channel panic if we call .Shutdown() twice.
 	numWorkers int
 }
 
@@ -40,7 +39,7 @@ func (b *Microbatch) Submit(j Job) JobResult {
 
 // Start starts the configured number of workers. Returns the number of goroutines started.
 func (b *Microbatch) Start() int {
-	for i:= 0; i< b.numWorkers; i++ {
+	for i := 0; i < b.numWorkers; i++ {
 		wg.Add(1)
 		go b.submitWorker(i)
 	}
@@ -49,13 +48,13 @@ func (b *Microbatch) Start() int {
 
 // submitWorker reads off submit channel and builds the batches of jobs.
 func (b *Microbatch) submitWorker(id int) {
-	defer wg.Done() 
+	defer wg.Done()
 
 	slog.Info("Start SubmitWorker", "id", id)
 	receivedCount := 0
 	processedCount := 0
 	jobs := make([]Job, 0) // to avoid needing mutexes, each worker gets their own slice of jobs.
- 	for {
+	for {
 		// shutdown has been signalled and we're out of jobs to process, return.
 		if b.IsShutdown() && len(jobs) == 0 {
 			slog.Info("SubmitWorker finished all jobs", "id", id, "received", receivedCount, "processed", processedCount)
@@ -130,9 +129,9 @@ func (b *Microbatch) PrintAllJobResults() {
 		if ok {
 			slog.Info("JobResult[id]", "id", jr.ID, "output", jr.Output, "error", jr.Error, "IsDone()", jr.Job.IsDone())
 		}
-		
+
 		return true
-	})	
+	})
 }
 
 // GetJobResult retrieves a JobResult from the b.results sync.Map.
@@ -147,7 +146,6 @@ func (b *Microbatch) GetJobResult(id int) (JobResult, bool) {
 	}
 	return jr, ok
 }
-
 
 // New returns a configured Microbatch ready for use.
 func New(size int, maxAge time.Duration, numWorkers int, proc BatchProcessor) Microbatch {

@@ -1,13 +1,13 @@
 package main
 
-import(
+import (
 	"github.com/kzrl/microbatch"
-	"time"
 	"log/slog"
+	"time"
 )
 
-
 type MyWork struct{}
+
 func (m *MyWork) Do() (error, string) {
 	msg := "This is the result of Do() defined in the program calling the library"
 	slog.Info("MyWork.Do()", "output", msg)
@@ -19,12 +19,12 @@ func main() {
 	var nbp microbatch.NoopBatchProcessor
 
 	// New Microbatch with batches of 10, maxAge 10 seconds, using the NoopBatchProcessor.
-	mb := microbatch.New(10, time.Second * 10, 2, &nbp) 
+	mb := microbatch.New(10, time.Second*10, 2, &nbp)
 
 	// Start the SubmitWorkers.
 	mb.Start()
 	// Create 42 new jobs, each with a MyWork.
-	for i:=0; i < 42; i++ { 
+	for i := 0; i < 42; i++ {
 		j := microbatch.NewJob(i)
 		var m MyWork
 		j.Work = &m

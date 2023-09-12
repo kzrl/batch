@@ -9,12 +9,12 @@ import (
 func TestJob_IsDone(t *testing.T) {
 
 	tests := []struct {
-		name   string
+		name string
 		done bool
-		want   bool
+		want bool
 	}{
-		{name:"Job is marked as done", done: true, want: true},
-		{name:"Job is not marked as done", done: false, want: false},
+		{name: "Job is marked as done", done: true, want: true},
+		{name: "Job is not marked as done", done: false, want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
