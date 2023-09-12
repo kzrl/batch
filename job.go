@@ -50,6 +50,7 @@ func (j *Job) Done() error {
 	return nil
 }
 
+// NewJob creates a Job with a given ID.
 func NewJob(id int) Job {
 	return Job{
 		ID:      id,
@@ -57,6 +58,7 @@ func NewJob(id int) Job {
 	}
 }
 
+// Batch holds a slice of Jobs.
 type Batch struct {
 	Jobs []Job
 }
